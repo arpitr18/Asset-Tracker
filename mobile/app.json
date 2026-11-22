@@ -3,11 +3,11 @@
     "name": "Asset Tracker",
     "icon": "./assets/AssetLogo.png",
     "slug": "cadbury-visi-cooler-tracker",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "runtimeVersion": {
-      "policy": "fingerprint"
+      "policy": "appVersion"
     },
     "updates": {
       "checkAutomatically": "ON_LOAD",
@@ -43,6 +43,7 @@
         "expo-build-properties",
         {
           "android": {
+            "buildArchs": ["arm64-v8a"],
             "enableMinifyInReleaseBuilds": true,
             "enableShrinkResourcesInReleaseBuilds": true,
             "usesCleartextTraffic": false
