@@ -62,7 +62,9 @@ admin.get('/settings',wrap(async(_req,res)=>res.json(await runtimeSettings())));
 admin.put('/settings',wrap(async(req,res)=>{
   const config=settingsSchema.parse(req.body);
   await db.$transaction(async tx=>{
-    await tx.$executeRaw`UPDATE "TrackerSetting" SET value=${JSON.stringify(config)}::jsonb WHERE id=1`;
+    await tx.$executeRaw`INSERT INTO "TrackerSetting" (id,value)
+      VALUES (1,${JSON.stringify(config)}::jsonb)
+      ON CONFLICT (id) DO UPDATE SET value=EXCLUDED.value`;
     await audit(tx,req,'Runtime settings updated','TrackerSetting','1');
   });
   res.json(config);
