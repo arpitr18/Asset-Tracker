@@ -1,0 +1,4 @@
+import { TabSurface } from '../components/TabSurface';
+import React from 'react';import { View,Text,StyleSheet } from 'react-native';import { SafeAreaView } from 'react-native-safe-area-context';import { MaterialCommunityIcons } from '@expo/vector-icons';import { C } from '../theme';
+export function BlankScreen({title,icon,underHeader=false}){const Container=underHeader?TabSurface:SafeAreaView;return <Container style={s.root}><Text style={s.title}>{title}</Text><View style={s.center}><MaterialCommunityIcons name={icon} size={52} color={C.mid}/><Text style={s.text}>No data yet</Text></View></Container>}
+const s=StyleSheet.create({root:{flex:1,backgroundColor:C.pale,paddingHorizontal:16,paddingTop:8},title:{fontSize:27,fontWeight:'800',color:C.deep},center:{flex:1,alignItems:'center',justifyContent:'center',gap:12},text:{color:C.muted,fontSize:16}});

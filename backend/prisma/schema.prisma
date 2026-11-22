@@ -1,0 +1,404 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Employee {
+  id             String        @id @default(uuid()) @db.Uuid
+  email          String        @unique
+  name           String
+  passwordHash   String?
+  role           Role          @default(FIELD)
+  territoryId    String?       @db.Uuid
+  createdAt      DateTime      @default(now())
+  jobTitle       String?
+  enabled        Boolean       @default(true)
+  lastLogin      DateTime?     @db.Timestamptz(6)
+  sessionVersion Int           @default(0)
+  deletedAt      DateTime?     @db.Timestamptz(6)
+  AdminImport    AdminImport[]
+  assetReports   AssetReport[]
+  territory      Territory?    @relation(fields: [territoryId], references: [id])
+  surveys        Survey[]
+  visits         Visit[]
+}
+
+model Territory {
+  id          String     @id @default(uuid()) @db.Uuid
+  branchName  String
+  regionName  String
+  asmArea     String
+  soTerritory String
+  employees   Employee[]
+  outlets     Outlet[]
+
+  @@unique([branchName, regionName, asmArea, soTerritory])
+  @@index([branchName, regionName, asmArea])
+}
+
+model Distributor {
+  rdCode      String     @id
+  rdName      String
+  rdTown      String?
+  state       String?
+  latitude    Float?
+  longitude   Float?
+  gpsVerified Boolean    @default(false)
+  outlets     Outlet[]
+  RDProfile   RDProfile?
+  RDSale      RDSale[]
+  RD_Master   RD_Master?
+
+  @@index([rdName])
+}
+
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model Outlet {
+  outletUid        String             @id
+  outletCodeRd     String?
+  outletName       String
+  territoryId      String             @db.Uuid
+  rdCode           String?
+  state            String?
+  beatName         String?
+  latitude         Float?
+  longitude        Float?
+  locationVerified Boolean?
+  recordType       String
+  sourceFields     Json
+  assets           AssetAssignment[]
+  distributor      Distributor?       @relation(fields: [rdCode], references: [rdCode])
+  territory        Territory          @relation(fields: [territoryId], references: [id])
+  sales            Sale[]
+  StoreSalesReport StoreSalesReport[]
+  surveys          Survey[]
+  visits           Visit[]
+
+  @@index([outletName])
+  @@index([territoryId, outletUid])
+  @@index([rdCode])
+  @@index([outletCodeRd], map: "Outlet_code_rd_lookup")
+}
+
+model CoolerAsset {
+  assetCode          String            @id
+  model              String?
+  make               String?
+  qrCode             String?
+  modelVerified      String?
+  visiDate           DateTime?
+  pmDate             DateTime?
+  firStatus          String?
+  firDate            DateTime?
+  firRemark          String?
+  finalSummary       String?
+  masterFinalSummary String?
+  recordType         String
+  sourceFields       Json
+  assignments        AssetAssignment[]
+  inspections        Inspection[]
+}
+
+model AssetAssignment {
+  id         String        @id @default(uuid()) @db.Uuid
+  assetCode  String
+  outletUid  String
+  visiNo     String?
+  assignedAt DateTime?
+  endedAt    DateTime?
+  asset      CoolerAsset   @relation(fields: [assetCode], references: [assetCode])
+  outlet     Outlet        @relation(fields: [outletUid], references: [outletUid])
+  reports    AssetReport[]
+
+  @@unique([assetCode, outletUid, assignedAt])
+  @@index([outletUid, endedAt])
+}
+
+model Visit {
+  id          String       @id @default(uuid()) @db.Uuid
+  outletUid   String
+  employeeId  String       @db.Uuid
+  visitedAt   DateTime     @default(now())
+  latitude    Float?
+  longitude   Float?
+  note        String?
+  FieldSurvey FieldSurvey?
+  survey      Survey?
+  employee    Employee     @relation(fields: [employeeId], references: [id])
+  outlet      Outlet       @relation(fields: [outletUid], references: [outletUid])
+
+  @@index([outletUid, visitedAt])
+}
+
+model AssetReport {
+  id           String          @id @db.Uuid
+  assignmentId String          @db.Uuid
+  employeeId   String          @db.Uuid
+  createdAt    DateTime        @default(now()) @db.Timestamptz(6)
+  complaint    String?
+  photo        Bytes?
+  assignment   AssetAssignment @relation(fields: [assignmentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  employee     Employee        @relation(fields: [employeeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([assignmentId, createdAt(sort: Desc)], map: "AssetReport_assignment_time")
+}
+
+model Survey {
+  id             String       @id @default(uuid()) @db.Uuid
+  idempotencyKey String       @unique
+  outletUid      String
+  employeeId     String       @db.Uuid
+  visitId        String       @unique @db.Uuid
+  condition      String
+  observations   String?
+  createdAt      DateTime     @default(now())
+  inspections    Inspection[]
+  photographs    Photograph[]
+  employee       Employee     @relation(fields: [employeeId], references: [id])
+  outlet         Outlet       @relation(fields: [outletUid], references: [outletUid])
+  visit          Visit        @relation(fields: [visitId], references: [id])
+}
+
+model Inspection {
+  id         String      @id @default(uuid()) @db.Uuid
+  assetCode  String
+  surveyId   String      @db.Uuid
+  condition  String
+  verifiedAt DateTime    @default(now())
+  asset      CoolerAsset @relation(fields: [assetCode], references: [assetCode])
+  survey     Survey      @relation(fields: [surveyId], references: [id])
+}
+
+model Photograph {
+  id         String   @id @default(uuid()) @db.Uuid
+  surveyId   String   @db.Uuid
+  storageKey String   @unique
+  mimeType   String
+  createdAt  DateTime @default(now())
+  survey     Survey   @relation(fields: [surveyId], references: [id])
+}
+
+model Sale {
+  id        String   @id @default(uuid()) @db.Uuid
+  outletUid String
+  period    DateTime
+  amount    Decimal  @db.Decimal(14, 2)
+  outlet    Outlet   @relation(fields: [outletUid], references: [outletUid])
+
+  @@unique([outletUid, period])
+}
+
+model VerificationRecord {
+  id        String   @id @default(uuid()) @db.Uuid
+  outletUid String?
+  assetCode String?
+  kind      String
+  result    String
+  source    String
+  createdAt DateTime @default(now())
+}
+
+model ImportJob {
+  id        String       @id @default(uuid()) @db.Uuid
+  fileName  String
+  status    ImportStatus @default(PENDING)
+  rowCount  Int          @default(0)
+  errors    Json?
+  createdAt DateTime     @default(now())
+  appliedAt DateTime?
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String
+  details   Json?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId, createdAt])
+  @@index([createdAt(sort: Desc)], map: "AuditLog_recent")
+}
+
+model AdminImport {
+  id         String    @id @db.Uuid
+  kind       String
+  filename   String
+  rowCount   Int
+  employeeId String?   @db.Uuid
+  createdAt  DateTime  @default(now()) @db.Timestamptz(6)
+  Employee   Employee? @relation(fields: [employeeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model FieldEvidence {
+  surveyId    String      @db.Uuid
+  questionId  String
+  kind        String
+  fileName    String?
+  mime        String
+  content     Bytes
+  FieldSurvey FieldSurvey @relation(fields: [surveyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([surveyId, questionId, kind])
+}
+
+model FieldQuestion {
+  id         String  @id
+  position   Int
+  active     Boolean @default(true)
+  definition Json
+}
+
+model FieldSurvey {
+  id             String          @id @db.Uuid
+  answers        Json
+  storePhoto     Bytes
+  assetPhoto     Bytes?
+  distance       Float?
+  campaignId     String?         @db.Uuid
+  FieldEvidence  FieldEvidence[]
+  SurveyCampaign SurveyCampaign? @relation(fields: [campaignId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Visit          Visit           @relation(fields: [id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model IndianState {
+  name String @id
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model RDProfile {
+  rdCode      String      @id
+  branch      String
+  bsm         String
+  type        String
+  phone       String?
+  address     String
+  firm        String
+  synthetic   Boolean     @default(false)
+  Distributor Distributor @relation(fields: [rdCode], references: [rdCode], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model RDSale {
+  rdCode      String
+  period      DateTime    @db.Date
+  amount      Decimal     @db.Decimal(14, 2)
+  Distributor Distributor @relation(fields: [rdCode], references: [rdCode], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([rdCode, period])
+}
+
+model RD_Master {
+  RDCode        String      @id @db.VarChar(50)
+  RDName        String?     @db.VarChar(255)
+  RDType        String?     @db.VarChar(100)
+  RD_SST_SUBD   String?     @db.VarChar(100)
+  Town          String?     @db.VarChar(100)
+  StateName     String?     @db.VarChar(100)
+  TownClassName String?     @db.VarChar(100)
+  SOTerritory   String?     @db.VarChar(100)
+  ASMArea       String?     @db.VarChar(100)
+  RegionName    String?     @db.VarChar(100)
+  BranchName    String?     @db.VarChar(100)
+  Address       String?     @db.VarChar(500)
+  Phone         String?     @db.VarChar(30)
+  ContactPerson String?     @db.VarChar(150)
+  CellNo        String?     @db.VarChar(30)
+  Email_Id      String?     @db.VarChar(255)
+  ASMName       String?     @db.VarChar(150)
+  ASMContact    String?     @db.VarChar(30)
+  SEName        String?     @db.VarChar(150)
+  SEContact     String?     @db.VarChar(30)
+  ActiveFrom    DateTime?   @db.Date
+  PCCount       Int?
+  StoreCount    Int?
+  Distributor   Distributor @relation(fields: [RDCode], references: [rdCode], onDelete: NoAction, onUpdate: NoAction)
+  RD_Sales      RD_Sales[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model RD_Sales {
+  SalesID      BigInt    @id
+  RDCode       String    @db.VarChar(50)
+  SalesYear    Int
+  LY_M1        Decimal?  @db.Decimal(18, 2)
+  LY_M2        Decimal?  @db.Decimal(18, 2)
+  LY_M3        Decimal?  @db.Decimal(18, 2)
+  LY_M4        Decimal?  @db.Decimal(18, 2)
+  LY_M5        Decimal?  @db.Decimal(18, 2)
+  LY_M6        Decimal?  @db.Decimal(18, 2)
+  LY_M7        Decimal?  @db.Decimal(18, 2)
+  LY_M8        Decimal?  @db.Decimal(18, 2)
+  LY_M9        Decimal?  @db.Decimal(18, 2)
+  LY_M10       Decimal?  @db.Decimal(18, 2)
+  LY_M11       Decimal?  @db.Decimal(18, 2)
+  LY_M12       Decimal?  @db.Decimal(18, 2)
+  CY_1         Decimal?  @db.Decimal(18, 2)
+  CY_2         Decimal?  @db.Decimal(18, 2)
+  CY_3         Decimal?  @db.Decimal(18, 2)
+  CY_4         Decimal?  @db.Decimal(18, 2)
+  CY_5         Decimal?  @db.Decimal(18, 2)
+  CY_6         Decimal?  @db.Decimal(18, 2)
+  CY_7         Decimal?  @db.Decimal(18, 2)
+  CY_8         Decimal?  @db.Decimal(18, 2)
+  CY_9         Decimal?  @db.Decimal(18, 2)
+  CY_10        Decimal?  @db.Decimal(18, 2)
+  CY_11        Decimal?  @db.Decimal(18, 2)
+  CY_12        Decimal?  @db.Decimal(18, 2)
+  YTDGrowth    Decimal?  @db.Decimal(18, 2)
+  WSContri     Decimal?  @db.Decimal(10, 2)
+  RetailContri Decimal?  @db.Decimal(10, 2)
+  RD_Master    RD_Master @relation(fields: [RDCode], references: [RDCode], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([RDCode, SalesYear], map: "RD_Sales_code_year")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model StoreSalesReport {
+  outletUid String
+  year      Int
+  ly        Decimal[] @db.Decimal(18, 2)
+  cm        Decimal[] @db.Decimal(18, 2)
+  growth    Decimal?  @db.Decimal(18, 2)
+  Outlet    Outlet    @relation(fields: [outletUid], references: [outletUid], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([outletUid, year])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model SurveyCampaign {
+  id          String        @id @db.Uuid
+  title       String
+  status      String        @default("draft")
+  startDate   DateTime?     @db.Date
+  endDate     DateTime?     @db.Date
+  regions     String[]
+  stores      String[]
+  questions   Json
+  publishedAt DateTime?     @db.Timestamptz(6)
+  updatedAt   DateTime      @default(now()) @db.Timestamptz(6)
+  FieldSurvey FieldSurvey[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model TrackerSetting {
+  id    Int  @id
+  value Json
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  FIELD
+}
+
+enum ImportStatus {
+  PENDING
+  PREVIEW
+  APPLIED
+  FAILED
+}

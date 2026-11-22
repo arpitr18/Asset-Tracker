@@ -1,0 +1,13 @@
+{
+  "name": "cadbury-tracker",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "mobile"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev -w backend",
+    "test": "npm test -w backend",
+    "dev:admin": "npm --prefix admin run dev"
+  }
+}

@@ -1,0 +1,16 @@
+node_modules/
+.env
+**/.env
+.expo/
+.expo-export-check/
+.native-release-check/
+mobile/android/
+mobile/ios/
+import-preview.json
+admin/dist/
+*.jks
+*.keystore
+credentials.json
+**/private-key.pem
+docs/
+data/
