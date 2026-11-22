@@ -25,7 +25,7 @@ The repository-root `.easignore` excludes local environment files, credentials, 
 eas build --platform android --profile preview
 ```
 
-The **preview** profile outputs a signed installable APK on the preview channel. The **production** profile outputs an AAB for Google Play. Download the preview APK from the completed EAS build and install it on a physical Android device.
+Both profiles output signed installable APKs. Preview builds receive updates on the `preview` channel, and production builds receive updates on the `production` channel. Download the APK from the completed EAS build and install it on a physical Android device.
 
 Verify login, map tiles, GPS, scanning a real cooler QR/barcode, photo capture and upload, survey submission, and restart with a weak or offline connection. Confirm the selected API environment before submitting real data. A successful JavaScript export does not exercise R8 or APK signing. Check the release build logs for R8 and retain the matching `mapping.txt` from the Gradle release outputs for crash deobfuscation.
 

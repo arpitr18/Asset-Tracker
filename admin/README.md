@@ -11,9 +11,13 @@ npm exec -w backend -- prisma migrate deploy
 npm run dev:api
 ```
 
-In a second terminal run `npm run dev:admin` from the root or `bun run dev` from `admin`. Open the URL printed by Vite and sign in with an existing ADMIN account. The dev server starts on port 5173 and tries the next available port if needed. It proxies `/api` to `http://127.0.0.1:4000`. Set `ADMIN_API_ORIGIN` or `ADMIN_PORT` to change those defaults.
+In a second terminal, set `$env:ADMIN_API_ORIGIN = 'http://127.0.0.1:4000'` to use the local backend. Then run `npm run dev:admin` from the root or `bun run dev` from `admin`. Without that override, Vite proxies `/api` to Render. Open the URL printed by Vite and sign in with an existing ADMIN account.
 
 `bun run build` from `admin` writes the Vite bundle to `admin/dist`. `bun run preview` serves the build locally. For deployment, serve the bundle over HTTPS with a same-origin reverse proxy at `/api` that strips the prefix. The admin app has its own package lock and uses Rollup’s WebAssembly build to avoid the Windows native DLL requirement.
+
+## Deploy to Vercel
+
+Set Root Directory to `admin`, Framework Preset to Vite, and Output Directory to `dist`. The included `vercel.json` forwards same-origin `/api` requests to Render and supports direct visits to React Router pages. No API URL environment variable is needed on Vercel.
 
 ## Accounts
 
