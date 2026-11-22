@@ -11,7 +11,8 @@ const assetSelect = { assetCode: true, model: true, make: true, qrCode: true, mo
 function summary(o) { return { outletUid: o.outletUid, outletCodeRd: o.outletCodeRd, outletName: o.outletName, state: o.state, beatName: o.beatName, latitude: o.latitude, longitude: o.longitude, recordType: o.recordType, territory: o.territory, distributor: o.distributor, assets: o.assets.map(a => ({ visiNo: a.visiNo, ...a.asset })) }; }
 
 stores.get('/hierarchy', async (req, res, next) => { try {
-  const rows = await db.territory.findMany({ where: req.employee.role === 'ADMIN' ? {} : { id: req.employee.territoryId || '00000000-0000-0000-0000-000000000000' }, select: { branchName: true, regionName: true, asmArea: true, soTerritory: true }, orderBy: [{ branchName: 'asc' }, { regionName: 'asc' }] });
+  const { territoryId } = territoryWhere(req.employee);
+  const rows = await db.territory.findMany({ where: { id: territoryId }, select: { branchName: true, regionName: true, asmArea: true, soTerritory: true }, orderBy: [{ branchName: 'asc' }, { regionName: 'asc' }] });
   res.json(rows);
 } catch (e) { next(e); } });
 

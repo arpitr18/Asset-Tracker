@@ -25,7 +25,7 @@ The admin app uses browser routes such as `/dashboard`, `/users`, and `/settings
 
 Create or edit an employee, assign their role and territory, enable or disable access, and reset their password. The list records the latest successful login. Password resets, disabling, and access changes revoke existing sessions. An admin cannot disable their own account or remove their own admin role.
 
-New users start with the editable initial password `Demo@@1234`. The territory picker is available for Field Executives. Existing Manager territory assignments are retained, and creating a Manager does not grant cross-territory access. Deleting a user revokes sign-in and removes them from the active directory while preserving historical activity and audit references.
+New users start with the editable initial password `Demo@@1234`. Field Executives are limited to their assigned territory. Managers can access operational data across all territories. The admin console requires the Admin role. Deleting a user revokes sign-in and removes them from the active directory while preserving historical activity and audit references.
 
 ## Excel workbooks
 

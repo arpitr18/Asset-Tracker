@@ -7,7 +7,8 @@ import { months } from './masterWorkbooks.js';
 export const rd = Router();
 rd.get('/distributors', async (req, res, next) => { try {
   const { q } = z.object({ q: z.string().max(100).default('') }).parse(req.query);
-  const rows = await db.distributor.findMany({ where: { OR: [{ rdCode: { contains: q, mode: 'insensitive' } }, { rdName: { contains: q, mode: 'insensitive' } }, { rdTown: { contains: q, mode: 'insensitive' } }], outlets: { some: territoryWhere(req.employee) } }, take: 30, orderBy: { rdName: 'asc' }, select: { rdCode: true, rdName: true, rdTown: true, latitude: true, longitude: true, gpsVerified: true, _count: { select: { outlets: true } } } });
+  const scope = territoryWhere(req.employee);
+  const rows = await db.distributor.findMany({ where: { OR: [{ rdCode: { contains: q, mode: 'insensitive' } }, { rdName: { contains: q, mode: 'insensitive' } }, { rdTown: { contains: q, mode: 'insensitive' } }], ...(scope.territoryId && { outlets: { some: scope } }) }, take: 30, orderBy: { rdName: 'asc' }, select: { rdCode: true, rdName: true, rdTown: true, latitude: true, longitude: true, gpsVerified: true, _count: { select: { outlets: true } } } });
   res.json(rows);
 } catch (e) { next(e); } });
 

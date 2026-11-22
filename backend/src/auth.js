@@ -17,4 +17,7 @@ export async function authenticate(req, res, next) {
   } catch { res.status(401).json({ error: 'Invalid session' }); }
 }
 export const requireRole = (...roles) => (req, res, next) => roles.includes(req.employee.role) ? next() : res.status(403).json({ error: 'Forbidden' });
-export function territoryWhere(employee) { return employee.role === 'ADMIN' ? {} : { territoryId: employee.territoryId || '00000000-0000-0000-0000-000000000000' }; }
+export function territoryWhere(employee) {
+  if (employee.role === 'ADMIN' || employee.role === 'MANAGER') return {};
+  return { territoryId: employee.territoryId || '00000000-0000-0000-0000-000000000000' };
+}
