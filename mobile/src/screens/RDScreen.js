@@ -63,8 +63,10 @@ export function RDScreen({navigation}){
         <View style={s.row}>{['',...(options.data?.branches??['North','South','East','West'])].map(value=><Chip key={value} label={value||'All'} selected={branch===value&&!state}
           onPress={()=>{setBranch(value);setBsm('');setRegion('');setState('');}}/>)}</View>
         {!!geography?.bsm.length&&<><Text style={styles.heading}>BSM Area</Text>
-          <View style={s.row}>{geography.bsm.map(value=><Chip key={value} label={branch+' '+value} selected={bsm===value}
-            onPress={()=>{setBsm(bsm===value?'':value);setRegion('');}}/>)}</View></>}
+          <ScrollView horizontal contentContainerStyle={s.regions}>
+            {geography.bsm.map(value=><Chip key={value} label={value} selected={bsm===value} compact
+              onPress={()=>{setBsm(bsm===value?'':value);setRegion('');}}/>)}
+          </ScrollView></>}
         {!!geography?.regions.length&&<><Text style={styles.heading}>Region</Text>
           <ScrollView horizontal contentContainerStyle={s.regions}>
             {geography.regions.map(value=><Chip key={value} label={value} selected={region===value} compact
@@ -110,7 +112,7 @@ export function RDDetailsScreen({navigation,route}){
         {tab==='Overview'?<Panel title="Stockist information" icon="information-outline">
           <Fact label="RD code" value={item.rdCode}/><Fact label="RD type" value={item.type}/>
           <Fact label="Firm" value={item.firm}/><Fact label="Branch" value={item.branch}/>
-          <Fact label="BSM area" value={item.bsm?item.branch+' '+item.bsm:null}/><Fact label="State" value={item.state}/>
+          <Fact label="BSM area" value={item.bsm}/><Fact label="State" value={item.state}/>
           <Fact label="Town" value={item.rdTown}/><Fact label="Region" value={item.region}/>
           <Fact label="ASM area" value={master?.ASMArea}/><Fact label="SO territory" value={master?.SOTerritory}/>
           <Fact label="Outlet count" value={master?.StoreCount}/><Fact label="PC count" value={master?.PCCount}/>

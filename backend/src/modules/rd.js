@@ -16,7 +16,7 @@ rd.get('/rd-directory/options', async (req,res,next)=>{
     const states=await db.$queryRaw`SELECT name FROM "IndianState" ORDER BY name`;
     const scope=territoryWhere(req.employee).territoryId??null;
     const rows=await db.$queryRaw`SELECT DISTINCT lower(coalesce(m."BranchName",p.branch)) AS branch,
-      m."RegionName" AS region,p.bsm FROM "Distributor" d
+      m."RegionName" AS region,coalesce(m."BSM",p.bsm) AS bsm FROM "Distributor" d
       LEFT JOIN "RD_Master" m ON m."RDCode"=d."rdCode" LEFT JOIN "RDProfile" p USING ("rdCode")
       WHERE ${scope}::uuid IS NULL OR EXISTS(SELECT 1 FROM "Outlet" o WHERE o."rdCode"=d."rdCode" AND o."territoryId"=${scope}::uuid)`;
     const branches=['North','South','East','West'];
@@ -33,13 +33,13 @@ async function directory(employee,{branch=null,bsm=null,region=null,state=null,c
   const scope=territoryWhere(employee).territoryId??null;
   return db.$queryRaw`
     SELECT d."rdCode",coalesce(m."ContactPerson",d."rdName") AS "rdName",d."rdTown",d.state,
-      coalesce(m."BranchName",p.branch) AS branch,p.bsm,coalesce(m."RDType",p.type) AS type,
+      coalesce(m."BranchName",p.branch) AS branch,coalesce(m."BSM",p.bsm) AS bsm,coalesce(m."RDType",p.type) AS type,
       coalesce(m."CellNo",m."Phone",p.phone) AS phone,coalesce(m."Address",p.address) AS address,
       coalesce(nullif(p.firm,''),m."RDName") AS firm,p.synthetic,m."RegionName" AS region
     FROM "Distributor" d LEFT JOIN "RDProfile" p USING ("rdCode") LEFT JOIN "RD_Master" m ON m."RDCode"=d."rdCode"
     WHERE (${scope}::uuid IS NULL OR EXISTS(SELECT 1 FROM "Outlet" o WHERE o."rdCode"=d."rdCode" AND o."territoryId"=${scope}::uuid))
       AND (${branch}::text IS NULL OR lower(coalesce(m."BranchName",p.branch))=lower(${branch}))
-      AND (${bsm}::text IS NULL OR p.bsm=${bsm})
+      AND (${bsm}::text IS NULL OR coalesce(m."BSM",p.bsm)=${bsm})
       AND (${region}::text IS NULL OR m."RegionName"=${region})
       AND (${state}::text IS NULL OR lower(d.state)=lower(${state}))
       AND (${code}::text IS NULL OR d."rdCode"=${code})
@@ -49,7 +49,7 @@ async function directory(employee,{branch=null,bsm=null,region=null,state=null,c
 }
 rd.get('/rd-directory',async(req,res,next)=>{
   try {
-    const filters=z.object({branch:z.enum(['North','South','East','West']).optional(),bsm:z.enum(['A','B']).optional(),
+    const filters=z.object({branch:z.enum(['North','South','East','West']).optional(),bsm:z.string().optional(),
       region:z.string().max(100).optional(),state:z.string().max(100).optional(),after:z.string().max(100).optional()}).parse(req.query);
     const rows=await directory(req.employee,filters);
     res.json({items:rows.slice(0,10),next:rows.length>10?rows[9].rdCode:null});

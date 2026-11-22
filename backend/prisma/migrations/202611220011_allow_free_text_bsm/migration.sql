@@ -1,0 +1,4 @@
+BEGIN;
+ALTER TABLE "RD_Master" ADD COLUMN "BSM" text;
+ALTER TABLE "RDProfile" DROP CONSTRAINT "RDProfile_bsm_check";
+COMMIT;

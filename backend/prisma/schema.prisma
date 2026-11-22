@@ -304,6 +304,7 @@ model RD_Master {
   ASMArea       String?     @db.VarChar(100)
   RegionName    String?     @db.VarChar(100)
   BranchName    String?     @db.VarChar(100)
+  BSM           String?
   Address       String?     @db.VarChar(500)
   Phone         String?     @db.VarChar(30)
   ContactPerson String?     @db.VarChar(150)

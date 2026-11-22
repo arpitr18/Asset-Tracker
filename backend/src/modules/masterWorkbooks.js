@@ -44,7 +44,6 @@ export async function validateExtras(rows,kind){
       if(r.Email_Id&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.Email_Id))fail('Email_Id is not valid.');
       if(r.ActiveFrom&&!validDate(r.ActiveFrom))fail('ActiveFrom must use YYYY-MM-DD.');
       for(const key of ['PCCount','StoreCount'])if(r[key]&&(!/^\d+$/.test(r[key])||+r[key]>2147483647))fail(key+' must be a nonnegative integer.');
-      if(r.BSM&&!['A','B'].includes(r.BSM))fail('BSM must be A or B.');
     }else if(kind==='rd-sales'){
       if(!id64(rawId))fail('SalesID must be a positive BIGINT. Use an Excel text cell for long IDs.');
       if(!r.RDCode||!known.has(r.RDCode))fail('RDCode is missing or unknown. Import RD Master first.');
@@ -73,7 +72,7 @@ export async function saveExtra(tx,kind,r){
   if(kind==='stockists'){
     const data={...('RDName'in r&&{rdName:r.RDName||r.RDCode}),...('Town'in r&&{rdTown:r.Town||null}),...('StateName'in r&&{state:r.StateName||null})};
     await tx.distributor.upsert({where:{rdCode:r.RDCode},create:{rdCode:r.RDCode,rdName:r.RDCode,...data},update:data});
-    await upsert(tx,'RD_Master',rdFields,'RDCode',r,{ActiveFrom:'date',PCCount:'integer',StoreCount:'integer'});
+    await upsert(tx,'RD_Master',[...rdFields,'BSM'],'RDCode',r,{ActiveFrom:'date',PCCount:'integer',StoreCount:'integer'},r.BSM?[]:['BSM']);
     const profile=await tx.$queryRaw`SELECT branch,bsm,type,phone,address,firm,synthetic FROM "RDProfile" WHERE "rdCode"=${r.RDCode}`;
     const old=profile[0];
     const branch=r.BranchName||old?.branch;
@@ -112,6 +111,6 @@ export function exportExtra(kind,pagination){
     return db.$queryRaw`SELECT ${Prisma.join(columns)} FROM "RD_Sales" ORDER BY "SalesID" ${pagination}`;
   }
   const select=rdFields.map(field=>Prisma.raw(field==='ActiveFrom'?'m."ActiveFrom"::text AS "ActiveFrom"':'m."'+field+'"'));
-  return db.$queryRaw`SELECT ${Prisma.join(select)},p.bsm AS "BSM",p.firm AS "Firm",p.synthetic AS "Synthetic"
+  return db.$queryRaw`SELECT ${Prisma.join(select)},coalesce(m."BSM",p.bsm) AS "BSM",p.firm AS "Firm",p.synthetic AS "Synthetic"
     FROM "RD_Master" m LEFT JOIN "RDProfile" p ON p."rdCode"=m."RDCode" ORDER BY m."RDCode" ${pagination}`;
 }
